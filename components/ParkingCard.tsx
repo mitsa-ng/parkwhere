@@ -45,8 +45,16 @@ export default function ParkingCard({ record }: { record: ParkingRecord }) {
           <span className="text-xs text-gray-500">
             {formatTime(record.createdAt)}
           </span>
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-            <Timer createdAt={record.createdAt} />
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+            record.stoppedAt
+              ? 'bg-green-50 text-green-700'
+              : 'bg-amber-50 text-amber-700'
+          }`}>
+            {record.stoppedAt ? (
+              <><Timer createdAt={record.createdAt} stoppedAt={record.stoppedAt} /> · 已結束</>
+            ) : (
+              <Timer createdAt={record.createdAt} />
+            )}
           </span>
         </div>
         <p className="line-clamp-1 text-sm text-gray-700">

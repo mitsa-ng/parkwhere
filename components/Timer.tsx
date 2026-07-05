@@ -13,17 +13,25 @@ function formatElapsed(ms: number): string {
   return `${s} 秒`;
 }
 
-export default function Timer({ createdAt }: { createdAt: string }) {
+export default function Timer({
+  createdAt,
+  stoppedAt,
+}: {
+  createdAt: string;
+  stoppedAt?: string;
+}) {
   const [text, setText] = useState('');
 
   useEffect(() => {
+    const end = stoppedAt ? new Date(stoppedAt).getTime() : Date.now();
     function tick() {
-      setText(formatElapsed(Date.now() - new Date(createdAt).getTime()));
+      setText(formatElapsed(end - new Date(createdAt).getTime()));
     }
     tick();
+    if (stoppedAt) return;
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [createdAt]);
+  }, [createdAt, stoppedAt]);
 
   return <span>{text || '計算中…'}</span>;
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { getRecord, deleteRecord } from '@/lib/storage';
+import { getRecord, stopTimer, deleteRecord } from '@/lib/storage';
 import type { ParkingRecord } from '@/lib/types';
 import Timer from '@/components/Timer';
 
@@ -37,6 +37,11 @@ export default function RecordDetailPage({
     }, 0);
     return () => clearTimeout(timer);
   }, [id]);
+
+  function handleStop() {
+    stopTimer(id);
+    setRecord(getRecord(id) ?? null);
+  }
 
   function handleDelete() {
     if (!confirm('確定要刪除此筆記錄？')) return;
@@ -92,8 +97,15 @@ export default function RecordDetailPage({
           </div>
           <div>
             <p className="text-sm text-gray-500">已停</p>
-            <p className="text-sm font-semibold text-amber-700">
-              <Timer createdAt={record.createdAt} />
+            <p
+              className={`text-sm font-semibold ${
+                record.stoppedAt ? 'text-green-700' : 'text-amber-700'
+              }`}
+            >
+              <Timer
+                createdAt={record.createdAt}
+                stoppedAt={record.stoppedAt}
+              />
             </p>
           </div>
         </div>
@@ -114,7 +126,7 @@ export default function RecordDetailPage({
           </div>
         )}
 
-        <div className="pt-4">
+        <div className="space-y-3 pt-4">
           <a
             href={navUrl}
             target="_blank"
@@ -123,15 +135,24 @@ export default function RecordDetailPage({
           >
             🧭 開啟導航
           </a>
-        </div>
 
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-medium text-red-600 transition-all hover:bg-red-100 active:scale-[0.98] disabled:opacity-60"
-        >
-          {deleting ? '刪除中…' : '🗑️ 刪除此記錄 (已找到車)'}
-        </button>
+          {!record.stoppedAt && (
+            <button
+              onClick={handleStop}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 py-3 text-sm font-medium text-amber-700 transition-all hover:bg-amber-100 active:scale-[0.98]"
+            >
+              ⏹️ 停止計時 (找到車了)
+            </button>
+          )}
+
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-medium text-red-600 transition-all hover:bg-red-100 active:scale-[0.98] disabled:opacity-60"
+          >
+            {deleting ? '刪除中…' : '🗑️ 刪除此記錄'}
+          </button>
+        </div>
       </div>
     </div>
   );

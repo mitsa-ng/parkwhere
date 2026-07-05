@@ -7,4 +7,5 @@ export interface ParkingRecord {
   spot?: string;
   note?: string;
   createdAt: string;
+  stoppedAt?: string;
 }

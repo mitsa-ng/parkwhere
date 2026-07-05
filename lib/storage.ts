@@ -18,6 +18,15 @@ export function addRecord(record: ParkingRecord): void {
   saveRecords(records);
 }
 
+export function stopTimer(id: string): void {
+  const records = getRecords().map((r) =>
+    r.id === id && !r.stoppedAt
+      ? { ...r, stoppedAt: new Date().toISOString() }
+      : r,
+  );
+  saveRecords(records);
+}
+
 export function deleteRecord(id: string): void {
   const records = getRecords().filter((r) => r.id !== id);
   saveRecords(records);
