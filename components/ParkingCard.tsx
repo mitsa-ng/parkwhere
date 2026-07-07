@@ -2,8 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { ChevronRight, Navigation } from 'lucide-react';
 import type { ParkingRecord } from '@/lib/types';
-import Timer from './Timer';
+import StatusBadge from './StatusBadge';
+import { Button } from '@/components/ui/button';
+import { Card, CardFooter } from '@/components/ui/card';
 
 const MiniMap = dynamic(() => import('./MapView'), { ssr: false });
 
@@ -29,57 +32,59 @@ export default function ParkingCard({ record }: { record: ParkingRecord }) {
   const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${record.lat},${record.lng}`;
 
   return (
-    <Link
-      href={`/record/${record.id}`}
-      className="block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
-    >
-      <div className="h-36 w-full overflow-hidden bg-gray-100">
-        <MiniMap
-          center={[record.lat, record.lng]}
-          zoom={16}
-          className="h-full w-full"
-        />
-      </div>
-      <div className="space-y-1.5 p-4">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">
-            {formatTime(record.createdAt)}
-          </span>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-            record.stoppedAt
-              ? 'bg-green-50 text-green-700'
-              : 'bg-amber-50 text-amber-700'
-          }`}>
-            {record.stoppedAt ? (
-              <><Timer createdAt={record.createdAt} stoppedAt={record.stoppedAt} /> · 已結束</>
-            ) : (
-              <Timer createdAt={record.createdAt} />
-            )}
-          </span>
+    <Card className="gap-0 py-0 transition-shadow hover:shadow-md">
+      <Link href={`/record/${record.id}`} className="block">
+        <div className="h-36 w-full overflow-hidden bg-muted">
+          <MiniMap
+            center={[record.lat, record.lng]}
+            zoom={16}
+            interactive={false}
+            className="h-full w-full"
+          />
         </div>
-        <p className="line-clamp-1 text-sm text-gray-700">
-          {record.address || '未知地址'}
-        </p>
-        {(record.floor || record.spot) && (
-          <p className="line-clamp-1 text-xs text-gray-500">
-            {[record.floor, record.spot].filter(Boolean).join(' · ')}
+        <div className="space-y-1.5 p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {formatTime(record.createdAt)}
+            </span>
+            <StatusBadge
+              createdAt={record.createdAt}
+              stoppedAt={record.stoppedAt}
+            />
+          </div>
+          <p className="line-clamp-1 text-sm font-medium">
+            {record.address || '未知地址'}
           </p>
-        )}
-        <div className="flex items-center justify-between pt-1">
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600">
-            詳細資訊 →
-          </span>
-          <a
-            href={navUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            🧭 導航
-          </a>
+          {(record.floor || record.spot) && (
+            <p className="line-clamp-1 text-xs text-muted-foreground">
+              {[record.floor, record.spot].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
-      </div>
-    </Link>
+      </Link>
+      <CardFooter className="justify-between px-2.5 py-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          nativeButton={false}
+          render={<Link href={`/record/${record.id}`} />}
+        >
+          詳細資訊
+          <ChevronRight />
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          nativeButton={false}
+          render={
+            <a href={navUrl} target="_blank" rel="noopener noreferrer" />
+          }
+        >
+          <Navigation />
+          導航
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

@@ -10,6 +10,12 @@ export function getRecords(): ParkingRecord[] {
 
 export function saveRecords(records: ParkingRecord[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  // storage 事件只會在其他分頁觸發，同分頁用自訂事件通知
+  window.dispatchEvent(new Event('parkwhere:changed'));
+}
+
+export function clearRecords(): void {
+  saveRecords([]);
 }
 
 export function addRecord(record: ParkingRecord): void {

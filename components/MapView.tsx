@@ -9,6 +9,7 @@ import {
   useMap,
 } from 'react-leaflet';
 import L from 'leaflet';
+import { useTheme } from 'next-themes';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -26,6 +27,13 @@ const defaultIcon = L.icon({
 });
 
 L.Marker.prototype.options.icon = defaultIcon;
+
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+function tileUrl(dark: boolean) {
+  return `https://{s}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`;
+}
 
 function LocationMarker({
   marker,
@@ -73,6 +81,8 @@ interface MapViewProps {
   zoom?: number;
   className?: string;
   draggable?: boolean;
+  /** false 時為純預覽（卡片縮圖）：不能縮放拖曳，避免劫持頁面捲動 */
+  interactive?: boolean;
   onMove?: (lat: number, lng: number) => void;
 }
 
@@ -82,20 +92,30 @@ export default function MapView({
   zoom = 16,
   className = '',
   draggable = false,
+  interactive = true,
   onMove,
 }: MapViewProps) {
   const pos = marker ?? center;
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === 'dark';
 
   return (
     <MapContainer
       center={center}
       zoom={zoom}
       className={`z-0 ${className}`}
-      scrollWheelZoom
+      scrollWheelZoom={interactive}
+      dragging={interactive}
+      touchZoom={interactive}
+      doubleClickZoom={interactive}
+      boxZoom={interactive}
+      keyboard={interactive}
+      zoomControl={interactive}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        key={dark ? 'dark' : 'light'}
+        attribution={TILE_ATTRIBUTION}
+        url={tileUrl(dark)}
       />
       <LocationMarker marker={pos} draggable={draggable} onMove={onMove} />
     </MapContainer>

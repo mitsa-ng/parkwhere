@@ -4,8 +4,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { AlertCircle, ArrowLeft, Check, MapPin } from 'lucide-react';
 import { addRecord } from '@/lib/storage';
 import type { ParkingRecord } from '@/lib/types';
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
@@ -44,29 +54,36 @@ export default function ParkPage() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    let cancelled = false;
+  function locate(onCancelled?: () => boolean) {
+    setStep('locating');
+    setError('');
     getLocation()
       .then(async (pos) => {
-        if (cancelled) return;
+        if (onCancelled?.()) return;
         setLat(pos.coords.latitude);
         setLng(pos.coords.longitude);
         const addr = await reverseGeocode(
           pos.coords.latitude,
           pos.coords.longitude,
         );
-        if (cancelled) return;
+        if (onCancelled?.()) return;
         setAddress(addr);
         setStep('ready');
       })
       .catch(() => {
-        if (cancelled) return;
+        if (onCancelled?.()) return;
         setError('無法取得位置，請確認已開啟定位權限');
         setStep('ready');
       });
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    locate(() => cancelled);
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handlePositionChange(newLat: number, newLng: number) {
@@ -97,14 +114,17 @@ export default function ParkPage() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col">
-      <header className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-3">
-        <Link
-          href="/"
-          className="text-lg leading-none text-gray-500 hover:text-gray-700"
+      <header className="flex items-center gap-1.5 border-b bg-background px-3 py-2.5">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          nativeButton={false}
+          render={<Link href="/" />}
         >
-          ←
-        </Link>
-        <h1 className="text-lg font-semibold text-gray-800">記錄停車位置</h1>
+          <ArrowLeft />
+          <span className="sr-only">返回</span>
+        </Button>
+        <h1 className="font-heading text-base font-semibold">記錄停車位置</h1>
       </header>
 
       <div className="relative flex-1">
@@ -120,77 +140,77 @@ export default function ParkPage() {
         </div>
 
         {step === 'locating' && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
-            <div className="rounded-xl bg-white px-6 py-4 shadow-lg">
-              <p className="text-sm text-gray-600">正在定位中…</p>
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-xs">
+            <div className="flex items-center gap-2.5 rounded-xl bg-card px-5 py-3.5 text-sm text-muted-foreground shadow-lg ring-1 ring-foreground/10">
+              <Spinner className="text-primary" />
+              正在定位中…
             </div>
           </div>
         )}
 
         {error && (
-          <div className="absolute left-3 right-3 top-3 z-10 rounded-xl bg-red-50 px-4 py-3 shadow">
-            <p className="text-sm text-red-700">{error}</p>
-            <button
-              onClick={() => {
-                setStep('locating');
-                setError('');
-                getLocation()
-                  .then(async (pos) => {
-                    setLat(pos.coords.latitude);
-                    setLng(pos.coords.longitude);
-                    const addr = await reverseGeocode(
-                      pos.coords.latitude,
-                      pos.coords.longitude,
-                    );
-                    setAddress(addr);
-                    setStep('ready');
-                  })
-                  .catch(() => {
-                    setError('無法取得位置，請確認已開啟定位權限');
-                    setStep('ready');
-                  });
-              }}
-              className="mt-1 text-xs font-medium text-red-600 underline"
-            >
-              重新定位
-            </button>
-          </div>
+          <Alert
+            variant="destructive"
+            className="absolute inset-x-3 top-3 z-10 shadow-lg"
+          >
+            <AlertCircle />
+            <AlertTitle>定位失敗</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+            <AlertAction>
+              <Button variant="outline" size="xs" onClick={() => locate()}>
+                重新定位
+              </Button>
+            </AlertAction>
+          </Alert>
         )}
       </div>
 
-      <div className="space-y-3 border-t border-gray-200 bg-white px-4 py-4">
-        <p className="line-clamp-2 text-xs text-gray-500">
-          📍 {address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`}
+      <div className="space-y-3 border-t bg-background px-4 py-4">
+        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="mt-0.5 size-3.5 shrink-0 text-primary" />
+          <span className="line-clamp-2">
+            {address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`}
+          </span>
         </p>
 
         <div className="flex gap-2">
-          <input
+          <Input
             value={floor}
             onChange={(e) => setFloor(e.target.value)}
             placeholder="樓層 (選填)"
-            className="w-1/2 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+            className="h-10 w-1/2"
           />
-          <input
+          <Input
             value={spot}
             onChange={(e) => setSpot(e.target.value)}
             placeholder="車位號碼 (選填)"
-            className="w-1/2 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+            className="h-10 w-1/2"
           />
         </div>
-        <input
+        <Input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="備註 (選填，例如：靠近電梯)"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+          className="h-10"
         />
 
-        <button
+        <Button
           onClick={handleSave}
           disabled={step === 'saving'}
-          className="w-full rounded-xl bg-blue-600 py-3.5 text-base font-semibold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-60"
+          className="h-12 w-full text-base shadow-lg shadow-primary/25"
         >
-          {step === 'saving' ? '儲存中…' : '✅ 儲存停車位置'}
-        </button>
+          {step === 'saving' ? (
+            <>
+              <Spinner />
+              儲存中…
+            </>
+          ) : (
+            <>
+              <Check />
+              儲存停車位置
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
